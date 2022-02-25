@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<script>
+
+    function onLogin() {
+
+        const nameInput = document.getElementById("nameInput");
+        const name = nameInput.value;
+
+        fetch(`/login?name=${name}`, { credentials: 'same-origin' }).then(response => response.json()).then(json => {
+
+            const a = document.createElement('a');
+            a.href = '/content.html?name=' + json.name;
+            a.click();
+
+        });
+
+    }
+
+</script>
+
+<body>
+
+    <div id="content">
+        <h1>LOGIN</h1>
+        <div class="login-container">
+            <p>Dein Nutzername:</p>
+            <input id="nameInput" placeholder="Nutzername" />
+        </div>
+        <button onclick="onLogin()">Login</button>
+    </div>
+
+</body>
+
+</html>
+
+<style>
+    #content {
+        font-family: 'Courier New', Courier, monospace;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    h1 {
+        font-size: 70px;
+    }
+
+    .login-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    input {
+        height: min-content;
+    }
+
+    button {
+        margin-top: 1rem;
+        font-family: 'Courier New', Courier, monospace;
+        cursor: pointer;
+        font-size: 25px;
+        background-color: transparent;
+        border: none;
+        border-radius: 10px;
+        background-color: rgb(206, 206, 206);
+    }
+
+    button:hover {
+        background-color: rgb(172, 172, 172);
+    }
+</style>

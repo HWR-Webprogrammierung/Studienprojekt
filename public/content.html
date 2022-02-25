@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<script>
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const name = urlParams.get('name');
+    let tiles;
+
+    // credentials: 'same-origin' to save and send cookies
+
+    window.onload = async () => {
+
+        fetch('/content', { credentials: 'same-origin' }).then(response => response.json()).then(result => {
+
+            if (!result.error) {
+
+                tiles = result;
+                loadTiles(tiles);
+
+            }
+
+        });
+
+    }
+
+    function loadTiles(tiles, filterIndex = 0) {
+
+        const contentDiv = document.getElementById('tiles');
+
+        let displayedTiles = [];
+
+        if (filterIndex === 0) {
+            displayedTiles = Object.values(tiles);
+        } else if (filterIndex === 1) {
+
+            for (const tileId of Object.keys(tiles)) {
+
+                const tileObject = tiles[tileId];
+                if (tileObject.favoured)
+                    displayedTiles.push(tileObject);
+
+            }
+
+        } else if (filterIndex === 2) {
+
+            let sortedArray = Object.values(tiles);
+            sortedArray.sort((tile1, tile2) => {
+                console.log(tile1.priority, tile2.priority);
+                return tile2.priority - tile1.priority;
+            });
+
+            displayedTiles = sortedArray;
+
+        }
+
+        for (const tile of displayedTiles) {
+
+            const tileHTML = createTile(tile.id, tile.title, tile.content, tile.favoured, tile.comments);
+            contentDiv.appendChild(tileHTML);
+
+        }
+
+    }
+
+    function createTile(tileId, title, content, favoured = false, comments = []) {
+
+        const div = document.createElement('div');
+        div.className = "tile";
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = "tile-title-content-container";
+
+        const titleH = document.createElement('h2');
+        titleH.className = "tile-title"
+        titleH.innerText = title;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.hidden = true;
+        contentDiv.className = "tile-content-container";
+
+        const showButton = document.createElement('button');
+        showButton.className = "tile-title-show-button";
+        showButton.innerText = 'Show';
+        showButton.onclick = () => {
+
+            if (showButton.innerText === 'Show') {
+                showButton.innerText = 'Hide';
+                contentDiv.hidden = false;
+                updateVisitedCountState(tileId);
+            } else if (showButton.innerText === 'Hide') {
+                showButton.innerText = 'Show';
+                contentDiv.hidden = true;
+            }
+
+        }
+
+        titleDiv.append(titleH, showButton);
+
+        const contentP = document.createElement('p');
+        contentP.innerText = content;
+        contentP.className = "tile-content";
+
+        const favoriteCheckbox = document.createElement('input');
+        favoriteCheckbox.type = 'checkbox'
+        favoriteCheckbox.checked = favoured;
+        favoriteCheckbox.onchange = () => {
+            saveFavoriteState(tileId, favoriteCheckbox.checked);
+        }
+
+        const favoriteLabel = document.createElement('label');
+        favoriteLabel.className = 'favorite-label'
+        favoriteLabel.innerText = 'Favorit';
+
+        favoriteLabel.appendChild(favoriteCheckbox);
+
+        const commentLabel = document.createElement('p');
+        commentLabel.innerText = 'Kommentare:';
+        commentLabel.hidden = comments.length === 0;
+
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'comments-container';
+
+        for (const comment of comments) {
+            commentDiv.appendChild(createComment(comment));
+        }
+
+        const createCommentDiv = document.createElement('div');
+        createCommentDiv.className = "create-comment-container";
+
+        const createCommentLabel = document.createElement('p');
+        createCommentLabel.innerText = "Schreibe einen Kommentar: ";
+        createCommentDiv.className = "create-comment-label";
+
+        const createCommentInput = document.createElement('textarea');
+        createCommentInput.className = "create-comment-input";
+
+        const createCommentButton = document.createElement('button');
+        createCommentButton.innerText = "Kommentieren";
+        createCommentButton.onclick = async () => {
+            const comment = await addComment(tileId, createCommentInput.value);
+            commentDiv.appendChild(createComment(comment));
+            createCommentInput.value = "";
+        }
+
+        createCommentDiv.append(createCommentLabel, createCommentInput, createCommentButton);
+
+        contentDiv.append(contentP, favoriteLabel, commentLabel, commentDiv, createCommentDiv);
+
+        div.append(titleDiv, contentDiv);
+
+        return div;
+
+    }
+
+    function createComment(commentObject) {
+
+        const singleCommentDiv = document.createElement('div');
+        singleCommentDiv.className = 'single-comment-container';
+
+        const commentCreatorP = document.createElement('p');
+        commentCreatorP.innerText = (commentObject.creator === name ? 'You' : commentObject.creator) + ':';
+        commentCreatorP.className = 'single-comment-creator';
+
+        const commentP = document.createElement('p');
+        commentP.innerText = commentObject.content;
+        commentP.className = 'single-comment-text';
+
+        const commentTimestampP = document.createElement('p');
+        commentTimestampP.innerText = `(${new Date(commentObject.timestamp).toLocaleTimeString()})`;
+        commentTimestampP.className = 'single-comment-timestamp';
+
+        singleCommentDiv.append(commentCreatorP, commentP, commentTimestampP);
+        return singleCommentDiv;
+
+    }
+
+    function saveFavoriteState(tileId, favoured) {
+        fetch(`/favorite?tileId=${tileId}&favoured=${favoured}`, { credentials: 'same-origin' }).then(() => {
+            tiles[tileId].favoured = favoured;
+        });
+    }
+
+    function updateVisitedCountState(tileId) {
+        fetch(`/visited?tileId=${tileId}`, { credentials: 'same-origin' }).then(() => {
+            if (!tiles[tileId].priority)
+                tiles[tileId].priority = 0;
+            tiles[tileId].priority++;
+        });
+    }
+
+    async function addComment(tileId, comment) {
+
+        return new Promise((resolve, reject) => {
+
+            fetch(`/comments`,
+                {
+                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ tileId, commentContent: comment })
+                })
+                .then(response => response.json())
+                .then(json => {
+                    resolve(json.comment);
+                });
+
+        });
+
+    }
+
+    function onFilter(index) {
+
+        const tileDiv = document.getElementById('tiles');
+        tileDiv.textContent = ''; // remove all children
+
+        loadTiles(tiles, index);
+
+    }
+
+</script>
+
+<body>
+
+    <h1 id="title">PROJEKTARBEIT</h1>
+
+    <div id="content">
+
+        <div class="filter-container">
+
+            <div class="filter-element">
+                <input type="radio" name="filter" id="all" checked onclick="onFilter(0)">
+                <label for="all">Alle</label>
+            </div>
+            <div class="filter-element">
+                <input type="radio" name="filter" id="favorites" onclick="onFilter(1)">
+                <label for="favorites">Favoriten</label>
+            </div>
+            <div class="filter-element">
+                <input type="radio" name="filter" id="most_visited" onclick="onFilter(2)">
+                <label for="cheese">Meist besucht</label>
+            </div>
+        </div>
+
+        <div id="tiles"></div>
+
+    </div>
+
+</body>
+
+<style>
+    body,
+    #content {
+        font-family: 'Courier New', Courier, monospace;
+        width: 100%;
+        display: flex;
+        gap: 2rem;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #tiles {
+        font-family: 'Courier New', Courier, monospace;
+        width: 100%;
+        display: flex;
+        gap: 2rem;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #title {
+        font-size: 4rem;
+    }
+
+    .filter-container {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .tile {
+        height: min-content;
+        width: 50%;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        background-color: rgb(199, 199, 199);
+        border-radius: 10px;
+    }
+
+    .tile-title-content-container {
+        width: 100%;
+        display: flex;
+        align-items: center;
+    }
+
+    .tile-title {
+        float: left;
+        font-size: 30px;
+    }
+
+    .tile-title-show-button {
+        font-family: 'Courier New', Courier, monospace;
+        float: right;
+        cursor: pointer;
+        font-size: 25px;
+        background-color: transparent;
+        border: none;
+    }
+
+    .tile-title-show-button:hover {
+        background-color: rgb(172, 172, 172);
+        border-radius: 10px;
+    }
+
+    .tile-content {
+        font-size: 20px;
+        padding: 1rem;
+        border-top: 1px solid gray;
+        border-bottom: 1px solid gray;
+    }
+
+    .tile-favorite-div {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .favorite-label {
+        display: flex;
+        align-items: center;
+    }
+
+    .comments-container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+        background-color: rgb(168, 168, 168);
+        border-radius: 10px;
+        color: rgb(231, 231, 231);
+    }
+
+    .single-comment-container {
+        display: flex;
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .single-comment-timestamp {
+        margin-right: 10px;
+    }
+
+    .single-comment-text {
+        word-wrap: break-word;
+        overflow: hidden;
+    }
+
+    .create-comment-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .create-comment-label {
+        width: 100%;
+    }
+
+    .create-comment-input {
+        width: 100%;
+        resize: vertical;
+    }
+</style>
+
+</html>
