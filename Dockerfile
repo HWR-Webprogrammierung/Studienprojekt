@@ -5,4 +5,4 @@ RUN git clone https://github.com/HWR-Webprogrammierung/Studienprojekt.git ./
 RUN npm install
 
 EXPOSE 8080
-CMD ["node", "index.js"]
+CMD ["node", "src/index.js"]
