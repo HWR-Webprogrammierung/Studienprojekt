@@ -35,7 +35,7 @@ app.get("/login", function (req, res) {
 });
 
 function handleSecurity(req, res, next) {
-    if (!req.cookies.personal_cookie) {
+    if (!req.cookies.personal_cookie || !getUser(req.cookies.personal_cookie)) {
         res.status(401).sendFile(__dirname.substring(0, __dirname.length - 4) + '/public/index.html');
     } else {
         next();
@@ -106,7 +106,7 @@ app.get('/content', (req, res) => {
                 tileObject.favoured = (user.favorites.indexOf(tileId) !== -1);
 
             } else {
-                res.status(400).json({ error: 'Broken user!' });
+                res.status(401).sendFile(__dirname.substring(0, __dirname.length - 4) + '/public/index.html');
                 error = true;
                 break;
             }
