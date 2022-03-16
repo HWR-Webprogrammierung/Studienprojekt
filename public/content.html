@@ -146,6 +146,11 @@
         createCommentButton.innerText = "Kommentieren";
         createCommentButton.onclick = async () => {
             const comment = await addComment(tileId, createCommentInput.value);
+
+            if (!tiles[tileId].comments)
+                tiles[tileId].comments = [];
+
+            tiles[tileId].comments.push(comment);
             commentDiv.appendChild(createComment(comment));
             createCommentInput.value = "";
         }
