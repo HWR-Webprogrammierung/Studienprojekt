@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 
+<!-- Authors: Leon Maurice Paul, Daniel Kisner, Lucas Zaworski -->
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -10,6 +12,7 @@
 
 <script>
 
+    // Author: Lucas Zaworski
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     const name = urlParams.get('name');
@@ -17,6 +20,7 @@
 
     // credentials: 'same-origin' to save and send cookies
 
+    // Author: Lucas Zaworski
     window.onload = async () => {
 
         fetch('/content', { credentials: 'same-origin' }).then(response => response.json()).then(result => {
@@ -32,6 +36,7 @@
 
     }
 
+    // Author: Daniel Kisner
     function loadTiles(tiles, filterIndex = 0) {
 
         const contentDiv = document.getElementById('tiles');
@@ -70,6 +75,7 @@
 
     }
 
+    // Author: Daniel Kisner
     function createTile(tileId, title, content, favoured = false, comments = []) {
 
         const div = document.createElement('div');
@@ -165,6 +171,7 @@
 
     }
 
+    // Author: Daniel Kisner
     function createComment(commentObject) {
 
         const singleCommentDiv = document.createElement('div');
@@ -187,12 +194,14 @@
 
     }
 
+    // Author: Lucas Zaworski
     function saveFavoriteState(tileId, favoured) {
         fetch(`/favorite?tileId=${tileId}&favoured=${favoured}`, { credentials: 'same-origin' }).then(() => {
             tiles[tileId].favoured = favoured;
         });
     }
 
+    // Author: Lucas Zaworski
     function updateVisitedCountState(tileId) {
         fetch(`/visited?tileId=${tileId}`, { credentials: 'same-origin' }).then(() => {
             if (!tiles[tileId].priority)
@@ -201,6 +210,7 @@
         });
     }
 
+    // Author: Leon Maurice Paul
     async function addComment(tileId, comment) {
 
         return new Promise((resolve, reject) => {
@@ -221,6 +231,7 @@
 
     }
 
+    // Author: Leon Maurice Paul
     function onFilter(index) {
 
         const tileDiv = document.getElementById('tiles');
@@ -231,6 +242,8 @@
     }
 
 </script>
+
+<!-- Author: Daniel Kisner -->
 
 <body>
 
